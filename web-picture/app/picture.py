@@ -129,47 +129,48 @@ token = os.environ["PICTURE_TOKEN"] if "PICTURE_TOKEN" in os.environ else False
 @routes.get('/')
 @aiohttp_jinja2.template('index.jinja2')
 async def handle_index(request: 'aiohttp.web.Request') -> dict:
-
-    files = db.select()
+    session = await aiohttp_session.get_session(request)
 
     return {
-        'files': files,
+        'is_authenticated': session.get('token', None) == token,
+        'files': db.select(),
     }
 
 
 @routes.get('/p/{image_uuid}')
 @aiohttp_jinja2.template('single.jinja2')
 async def handle_page(request: 'aiohttp.web.Request') -> dict:
-    img = db.select_by_uuid(request.match_info.get('image_uuid', None))
+    session = await aiohttp_session.get_session(request)
 
-    if img is None or not os.path.isfile(os.path.join(upload_dir, img.get('path'))):
-        return aiohttp.web.HTTPNotFound()
+    data = db.select_by_uuid(request.match_info.get('image_uuid', None))
+    if data is None or not os.path.isfile(os.path.join(upload_dir, data.get('path'))):
+        raise aiohttp.web.HTTPNotFound()
 
-    image = Image.open(os.path.join(upload_dir, img.get('path')))
     try:
-        image = Image.open(os.path.join(upload_dir, img.get('path')))
+        image = Image.open(os.path.join(upload_dir, data.get('path')))
     except:
-        return aiohttp.web.HTTPInternalServerError()
+        raise aiohttp.web.HTTPInternalServerError()
 
-    img['stat'] = os.stat(os.path.join(upload_dir, img.get('path')))
+    data['stat'] = os.stat(os.path.join(upload_dir, data.get('path')))
     if image.format.lower() in ('jpg', 'jpeg'):
         exif = image._getexif() if image._getexif() is not None else dict()
-        img = { **{ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}, **img }
-        img['Focal'] = int(img.get('FocalLength', (0, 1))[0] / img.get('FocalLength', (0, 1))[1])
-        img['Opening'] = round(img.get('FNumber', (0, 1))[0] / img.get('FNumber', (0, 1))[1], 1)
-    img['root'], img['extension'] = os.path.splitext(img.get('path'))
-    img['width'], img['height'], img['info'], img['format'] = image.width, image.height, image.info, image.format
-    img['resolution'] = round(img.get('width', 0) * img.get('height', 0) / 1000000, 1)
-    img['weight'] = si_prefix.si_format(img['stat'].st_size, precision=1)
+        data = { **{ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}, **data }
+        data['Focal'] = int(data.get('FocalLength', (0, 1))[0] / data.get('FocalLength', (0, 1))[1])
+        data['Opening'] = round(data.get('FNumber', (0, 1))[0] / data.get('FNumber', (0, 1))[1], 1)
+    data['root'], data['extension'] = os.path.splitext(data.get('path'))
+    data['width'], data['height'], data['info'], data['format'] = image.width, image.height, image.info, image.format
+    data['resolution'] = round(data.get('width', 0) * data.get('height', 0) / 1000000, 1)
+    data['weight'] = si_prefix.si_format(data['stat'].st_size, precision=1)
     try:
-        img['localtime'] = time.strptime(img.get('DateTime', ''), '%Y:%m:%d %H:%M:%S')
+        data['localtime'] = time.strptime(data.get('DateTime', ''), '%Y:%m:%d %H:%M:%S')
     except ValueError:
-        img['localtime'] = time.localtime(img['stat'].st_ctime)
-    img['date'] = time.strftime('%d %B %Y', img['localtime'])
-    img['time'] = time.strftime('%a, %H:%M', img['localtime'])
+        data['localtime'] = time.localtime(data['stat'].st_ctime)
+    data['date'] = time.strftime('%d %B %Y', data['localtime'])
+    data['time'] = time.strftime('%a, %H:%M', data['localtime'])
 
     return {
-        'data': img,
+        'is_authenticated': session.get('token', None) == token,
+        'data': data,
     }
 
 
@@ -182,7 +183,7 @@ async def handle_login(request: 'aiohttp.web.Request') -> dict:
 
 
 @routes.post('/login')
-async def handle_login_form(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+async def handle_login(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
     post = await request.post()
     if post.get('token', None) == token:
         session = await aiohttp_session.get_session(request)
@@ -194,23 +195,28 @@ async def handle_login_form(request: 'aiohttp.web.Request') -> 'aiohttp.web.Resp
 
 @routes.get('/upload')
 @aiohttp_jinja2.template('upload.jinja2')
-async def handle_admin(request: 'aiohttp.web.Request') -> dict:
-    session = await require_authenticated_user(request)
+async def handle_upload(request: 'aiohttp.web.Request') -> dict:
+    session = await aiohttp_session.get_session(request)
+    if session.get('token', None) != token:
+        raise aiohttp.web.HTTPFound('/login')
+    
     return {}
 
 
 @routes.post('/upload')
-async def handle_admin_store(request: 'aiohttp.web.Request') -> dict:
-    session = await require_authenticated_user(request)
-    post = await request.post()
+async def handle_upload(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+    session = await aiohttp_session.get_session(request)
+    if session.get('token', None) != token:
+        raise aiohttp.web.HTTPFound('/login')
 
+    post = await request.post()
     upload = post.get('image')
 
     if upload.content_type not in ('image/jpeg', 'image/jpg', 'image/png', 'image/gif'):
-        return aiohttp.web.HTTPBadRequest()
+        raise aiohttp.web.HTTPBadRequest()
 
     if upload.filename.split('.')[-1].lower() not in ('jpeg', 'jpg', 'png', 'gif'):
-        return aiohttp.web.HTTPBadRequest()
+        raise aiohttp.web.HTTPBadRequest()
 
     image_uuid = uuid.uuid4()
     filename = f"{hashlib.md5(image_uuid.bytes).hexdigest()}.{upload.filename.split('.')[-1].lower()}"
@@ -231,55 +237,6 @@ async def handle_admin_store(request: 'aiohttp.web.Request') -> dict:
     db.insert(image_uuid, upload.filename, os.path.join(path, filename), thumbnails)
 
     return aiohttp.web.HTTPFound(f'/image/{image_uuid}')
-
-
-@routes.get('/admin/explorer')
-@aiohttp_jinja2.template('explorer.jinja2')
-async def handle_admin_explorer(request: 'aiohttp.web.Request') -> dict:
-    session = await require_authenticated_user(request)
-
-    year = int('0' + re.sub(r'[^0-9]+', '', request.query.get('year', '')))
-    month = int('0' + re.sub(r'[^0-9]+', '', request.query.get('month', '')))
-
-    if year > 1970:
-        year = f"0000{year}"[-4:]
-        if 1 <= month and month <= 12:
-            month = f"00{month}"[-2:]
-            files = db.select_by_path(os.path.join(year, month))
-            for img in files:
-                if os.path.isfile(os.path.join(upload_dir, img.get('path'))):
-                    img['stat'] = os.stat(os.path.join(upload_dir, img.get('path')))
-                    img['weight'] = si_prefix.si_format(img['stat'].st_size, precision=1)
-                img['root'], img['extension'] = os.path.splitext(img.get('path'))
-                img['thumbnails'] = [{ 'size': thumbnail, 'path': f"{img.get('root')}-{thumbnail}.{img.get('extension').lstrip('.')}" } for thumbnail in json.loads(img['thumbnails'])]
-        else:
-            files, month = dict(), None
-            for img in db.select_by_path(year):
-                if re.match(r'^[0-9]{4}/[0-9]{2}/.*$', img.get('path')):
-                    m = int(re.sub(r'^[0-9]{4}/([0-9]{2})/.*$', r'\1', img.get('path')))
-                    if m not in files:
-                        files[m] = { 'name': f"00{m}"[-2:], 'counter': 0, 'st_size': 0, 'hr_size': None}
-                    files[m]['counter'] += 1 if os.path.isfile(os.path.join(upload_dir, img.get('path'))) else 0
-                    files[m]['st_size'] += os.stat(os.path.join(upload_dir, img.get('path'))).st_size if os.path.isfile(os.path.join(upload_dir, img.get('path'))) else 0
-                    files[m]['hr_size'] = si_prefix.si_format(files[m]['st_size'], precision=1)
-            files = [files[m] for m in sorted(files)]
-    else:
-        files, year, month = dict(), None, None
-        for img in db.select_by_path(''):
-            if re.match(r'^[0-9]{4}/[0-9]{2}/.*$', img.get('path')):
-                y = int(re.sub(r'^([0-9]{4})/[0-9]{2}/.*$', r'\1', img.get('path')))
-                if y not in files:
-                    files[y] = { 'name': f"0000{y}"[-4:], 'counter': 0, 'st_size': 0, 'hr_size': None}
-                files[y]['counter'] += 1 if os.path.isfile(os.path.join(upload_dir, img.get('path'))) else 0
-                files[y]['st_size'] += os.stat(os.path.join(upload_dir, img.get('path'))).st_size if os.path.isfile(os.path.join(upload_dir, img.get('path'))) else 0
-                files[y]['hr_size'] = si_prefix.si_format(files[y]['st_size'], precision=1)
-        files = [files[y] for y in sorted(files)]
-
-    return {
-        'year': year,
-        'month': month,
-        'files': files,
-    }
 
 
 @routes.get('/admin/delete/{image_uuid}')
