@@ -28,7 +28,6 @@ import json
 import locale
 import math
 import os
-import PIL
 import re
 import shutil
 import si_prefix
@@ -36,6 +35,9 @@ import sqlite3
 import sys
 import time
 import uuid
+
+from PIL import Image
+from PIL import ExifTags
 
 
 # Require Python 3.6+
@@ -63,10 +65,16 @@ class Database:
                 `uuid` TEXT NOT NULL,
                 `filename` TEXT NOT NULL,
                 `path` TEXT NOT NULL,
-                `thumbnails` TEXT DEFAULT "[]"
+                `caption` TEXT DEFAULT NULL,
+                `location` TEXT DEFAULT NULL
             );
         ''')
         self.conn.commit()
+
+    def select(self) -> list:
+        cursor = self.conn.cursor()
+        cursor.execute('''SELECT * FROM `images`''')
+        return [{key: row[key] for key in row.keys()} for row in cursor.fetchall()]
 
     def select_by_uuid(self, image_uuid: str) -> dict:
         cursor = self.conn.cursor()
@@ -74,29 +82,26 @@ class Database:
         row = cursor.fetchone()
         return {key: row[key] for key in row.keys()} if row is not None else None
 
-    def select_by_path(self, path_like: str) -> list:
+    def insert(self, image_uuid: str, filename: str, path: str, captiobn: str = '', location: str = '') -> None:
         cursor = self.conn.cursor()
-        cursor.execute('''SELECT * FROM `images` WHERE `path` LIKE :path_like ORDER BY `path`''', { 'path_like': str(path_like) + '%' })
-        return [{key: row[key] for key in row.keys()} for row in cursor.fetchall()]
-
-    def insert(self, image_uuid: str, filename: str, path: str, thumbnails: list = []) -> None:
-        cursor = self.conn.cursor()
-        cursor.execute('INSERT INTO `images` (`uuid`, `filename`, `path`, `thumbnails`) VALUES (:image_uuid, :filename, :path, :thumbnails)', {
+        cursor.execute('INSERT INTO `images` (`uuid`, `filename`, `path`, `caption`, `location`) VALUES (:image_uuid, :filename, :path, :caption, :location)', {
             'image_uuid': str(image_uuid),
             'filename': str(filename),
             'path': str(path),
-            'thumbnails': json.dumps(thumbnails)
+            'caption': str(caption),
+            'location': str(location)
         })
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] New image {filename} ({image_uuid})")
         self.conn.commit()
 
     def update(self, image_uuid: str, filename: str, path: str, thumbnails: list = []) -> None:
         cursor = self.conn.cursor()
-        cursor.execute('UPDATE `images` SET `filename` = :filename, `path` = :path, `thumbnails` = :thumbnails WHERE `uuid` = :image_uuid', {
+        cursor.execute('UPDATE `images` SET `filename` = :filename, `path` = :path, `caption` = :caption, `location` = :location WHERE `uuid` = :image_uuid', {
             'image_uuid': str(image_uuid),
             'filename': str(filename),
             'path': str(path),
-            'thumbnails': json.dumps(thumbnails)
+            'caption': str(caption),
+            'location': str(location)
         })
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Update image {filename} ({image_uuid})")
         self.conn.commit()
@@ -124,30 +129,35 @@ token = os.environ["PICTURE_TOKEN"] if "PICTURE_TOKEN" in os.environ else False
 @routes.get('/')
 @aiohttp_jinja2.template('index.jinja2')
 async def handle_index(request: 'aiohttp.web.Request') -> dict:
-    return {}
+
+    files = db.select()
+
+    return {
+        'files': files,
+    }
 
 
-@routes.get('/image/{image_uuid}')
-@aiohttp_jinja2.template('image.jinja2')
-async def handle_image(request: 'aiohttp.web.Request') -> dict:
+@routes.get('/p/{image_uuid}')
+@aiohttp_jinja2.template('single.jinja2')
+async def handle_page(request: 'aiohttp.web.Request') -> dict:
     img = db.select_by_uuid(request.match_info.get('image_uuid', None))
 
     if img is None or not os.path.isfile(os.path.join(upload_dir, img.get('path'))):
         return aiohttp.web.HTTPNotFound()
 
+    image = Image.open(os.path.join(upload_dir, img.get('path')))
     try:
-        image = PIL.Image.open(os.path.join(upload_dir, img.get('path')))
+        image = Image.open(os.path.join(upload_dir, img.get('path')))
     except:
         return aiohttp.web.HTTPInternalServerError()
 
     img['stat'] = os.stat(os.path.join(upload_dir, img.get('path')))
     if image.format.lower() in ('jpg', 'jpeg'):
         exif = image._getexif() if image._getexif() is not None else dict()
-        img = { **{PIL.ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}, **img }
+        img = { **{ExifTags.TAGS.get(tag, tag): value for tag, value in exif.items()}, **img }
         img['Focal'] = int(img.get('FocalLength', (0, 1))[0] / img.get('FocalLength', (0, 1))[1])
         img['Opening'] = round(img.get('FNumber', (0, 1))[0] / img.get('FNumber', (0, 1))[1], 1)
     img['root'], img['extension'] = os.path.splitext(img.get('path'))
-    img['thumbnails'] = [{ 'size': thumbnail, 'path': f"{img.get('root')}-{thumbnail}.{img.get('extension').lstrip('.')}" } for thumbnail in json.loads(img['thumbnails'])]
     img['width'], img['height'], img['info'], img['format'] = image.width, image.height, image.info, image.format
     img['resolution'] = round(img.get('width', 0) * img.get('height', 0) / 1000000, 1)
     img['weight'] = si_prefix.si_format(img['stat'].st_size, precision=1)
@@ -182,11 +192,45 @@ async def handle_login_form(request: 'aiohttp.web.Request') -> 'aiohttp.web.Resp
     return aiohttp.web.HTTPFound('/login')
 
 
-@routes.get('/admin')
-@aiohttp_jinja2.template('admin.jinja2')
+@routes.get('/upload')
+@aiohttp_jinja2.template('upload.jinja2')
 async def handle_admin(request: 'aiohttp.web.Request') -> dict:
     session = await require_authenticated_user(request)
     return {}
+
+
+@routes.post('/upload')
+async def handle_admin_store(request: 'aiohttp.web.Request') -> dict:
+    session = await require_authenticated_user(request)
+    post = await request.post()
+
+    upload = post.get('image')
+
+    if upload.content_type not in ('image/jpeg', 'image/jpg', 'image/png', 'image/gif'):
+        return aiohttp.web.HTTPBadRequest()
+
+    if upload.filename.split('.')[-1].lower() not in ('jpeg', 'jpg', 'png', 'gif'):
+        return aiohttp.web.HTTPBadRequest()
+
+    image_uuid = uuid.uuid4()
+    filename = f"{hashlib.md5(image_uuid.bytes).hexdigest()}.{upload.filename.split('.')[-1].lower()}"
+    path = os.path.join(time.strftime('%Y'), time.strftime('%m'))
+
+    os.makedirs(os.path.join(upload_dir, path), exist_ok=True)
+    with open(os.path.join(upload_dir, path, filename), 'wb') as file:
+        file.write(upload.file.read())
+
+    image = Image.open(os.path.join(upload_dir, path, filename))
+    root, extension = os.path.splitext(os.path.basename(image.filename))
+    thumbnails = list()
+    for width in [1200, 992, 768, 576]:
+        if image.width > width:
+            thumbnails.append(image_resize(image.copy(), os.path.join(upload_dir, path), root, extension, width))
+    if image.width > 150 and image.height > 150:
+        thumbnails.append(image_thumbnail(image.copy(), os.path.join(upload_dir, path), root, extension))
+    db.insert(image_uuid, upload.filename, os.path.join(path, filename), thumbnails)
+
+    return aiohttp.web.HTTPFound(f'/image/{image_uuid}')
 
 
 @routes.get('/admin/explorer')
@@ -238,40 +282,6 @@ async def handle_admin_explorer(request: 'aiohttp.web.Request') -> dict:
     }
 
 
-@routes.post('/admin/store')
-async def handle_admin_store(request: 'aiohttp.web.Request') -> dict:
-    session = await require_authenticated_user(request)
-    post = await request.post()
-
-    upload = post.get('image')
-
-    if upload.content_type not in ('image/jpeg', 'image/jpg', 'image/png', 'image/gif'):
-        return aiohttp.web.HTTPBadRequest()
-
-    if upload.filename.split('.')[-1].lower() not in ('jpeg', 'jpg', 'png', 'gif'):
-        return aiohttp.web.HTTPBadRequest()
-
-    image_uuid = uuid.uuid4()
-    filename = f"{hashlib.md5(image_uuid.bytes).hexdigest()}.{upload.filename.split('.')[-1].lower()}"
-    path = os.path.join(time.strftime('%Y'), time.strftime('%m'))
-
-    os.makedirs(os.path.join(upload_dir, path), exist_ok=True)
-    with open(os.path.join(upload_dir, path, filename), 'wb') as file:
-        file.write(upload.file.read())
-
-    image = PIL.Image.open(os.path.join(upload_dir, path, filename))
-    root, extension = os.path.splitext(os.path.basename(image.filename))
-    thumbnails = list()
-    for width in [1200, 992, 768, 576]:
-        if image.width > width:
-            thumbnails.append(image_resize(image.copy(), os.path.join(upload_dir, path), root, extension, width))
-    if image.width > 150 and image.height > 150:
-        thumbnails.append(image_thumbnail(image.copy(), os.path.join(upload_dir, path), root, extension))
-    db.insert(image_uuid, upload.filename, os.path.join(path, filename), thumbnails)
-
-    return aiohttp.web.HTTPFound(f'/image/{image_uuid}')
-
-
 @routes.get('/admin/delete/{image_uuid}')
 async def handle_admin_delete(request: 'aiohttp.web.Request') -> dict:
     session = await require_authenticated_user(request)
@@ -311,14 +321,14 @@ async def require_authenticated_user(request: 'aiohttp.web.Request') -> 'aiohttp
     return session
 
 
-def image_resize(image: 'PIL.Image.Image', path: str, root: str, extension: str, new_width: int) -> str:
+def image_resize(image: 'Image.Image', path: str, root: str, extension: str, new_width: int) -> str:
     new_height = int(new_width * image.height / image.width)
-    image = image.resize((new_width, new_height), PIL.Image.ANTIALIAS)
+    image = image.resize((new_width, new_height), Image.ANTIALIAS)
     image.save(os.path.join(path, f"{root}-{new_width}x{new_height}.{extension.lstrip('.')}"), image.format)
     return f"{new_width}x{new_height}"
 
 
-def image_thumbnail(image: 'PIL.Image.Image', path: str, root: str, extension: str, square: int = 150) -> str:
+def image_thumbnail(image: 'Image.Image', path: str, root: str, extension: str, square: int = 150) -> str:
     width, height = image.size
     if width < height:
         cropped = height - width
@@ -326,7 +336,7 @@ def image_thumbnail(image: 'PIL.Image.Image', path: str, root: str, extension: s
     elif width > height:
         cropped = width - height
         image = image.crop((int(math.floor(cropped / 2)), 0, int(width - math.ceil(cropped / 2)), height))
-    image.thumbnail((square, square), PIL.Image.ANTIALIAS)
+    image.thumbnail((square, square), Image.ANTIALIAS)
     image.save(os.path.join(path, f"{root}-{square}x{square}.{extension.lstrip('.')}"), image.format)
     return f"{square}x{square}"
 
@@ -356,7 +366,7 @@ def make_app() -> aiohttp.web.Application:
     app.router.add_static('/static', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'))
     app.router.add_static('/media', upload_dir)
     app.router.add_routes(routes)
-    app.middlewares.append(create_error_middleware({ 400: handle_400, 404: handle_404, 500: handle_500 }))
+    #app.middlewares.append(create_error_middleware({ 400: handle_400, 404: handle_404, 500: handle_500 }))
     return app
 
 
