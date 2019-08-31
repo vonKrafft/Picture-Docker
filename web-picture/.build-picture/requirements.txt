@@ -1,0 +1,8 @@
+aiohttp
+aiohttp_jinja2
+aiohttp_session
+cryptography
+Jinja2
+Pillow
+python-slugify
+si-prefix

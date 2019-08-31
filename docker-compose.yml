@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+    web-picture:
+        build: ./web-picture/.build-picture
+        image: vonkrafft/picture
+        container_name: web-picture
+        user: app
+        volumes:
+            - ./web-picture/app:/usr/src/app:ro
+            - ./web-picture/data:/usr/src/data
+            - ./web-picture/media:/usr/src/media
+            - ./web-picture/trash:/usr/src/trash
+        ports:
+            - 127.0.0.1:80:8080
+        environment:
+            PICTURE_TOKEN: my_awesome_token
+        command: [ "python", "/usr/src/app/picture.py" ]
