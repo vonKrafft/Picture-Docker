@@ -19,13 +19,44 @@
             <a class="navbar-brand flex-grow-1" href="/">
                 <svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="1em" class="mr-3 pr-3 border-right border-dark"><path fill="currentColor" d="M154 80H38c-3.3 0-6-2.7-6-6V38c0-3.3 2.7-6 6-6h116c3.3 0 6 2.7 6 6v36c0 3.3-2.7 6-6 6zm358 0v352c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V144c0-26.5 21.5-48 48-48h136l33.6-44.8C226.7 39.1 240.9 32 256 32h208c26.5 0 48 21.5 48 48zm-48 64H48v288h416V144zm0-64H256l-12 16h220V80zm-88 208c0-66.2-53.8-120-120-120s-120 53.8-120 120 53.8 120 120 120 120-53.8 120-120zm-48 0c0 39.7-32.3 72-72 72s-72-32.3-72-72 32.3-72 72-72 72 32.3 72 72zm-96 0c0-13.2 10.8-24 24-24 8.8 0 16-7.2 16-16s-7.2-16-16-16c-30.9 0-56 25.1-56 56 0 8.8 7.2 16 16 16s16-7.2 16-16z"></path></svg> Picture
             </a>
-            {% if is_authenticated == True %}
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
+            <ul class="navbar-nav flex-row mr-auto">
+                {% if is_authenticated %}
+                <li class="nav-item ml-3">
                     <a class="nav-link text-secondary" href="#"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" height="1em"><path fill="currentColor" d="M528 288H384v-32h64c42.6 0 64.2-51.7 33.9-81.9l-160-160c-18.8-18.8-49.1-18.7-67.9 0l-160 160c-30.1 30.1-8.7 81.9 34 81.9h64v32H48c-26.5 0-48 21.5-48 48v128c0 26.5 21.5 48 48 48h480c26.5 0 48-21.5 48-48V336c0-26.5-21.5-48-48-48zm-400-80L288 48l160 160H336v160h-96V208H128zm400 256H48V336h144v32c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48v-32h144v128zm-40-64c0 13.3-10.7 24-24 24s-24-10.7-24-24 10.7-24 24-24 24 10.7 24 24z"></path></svg></a>
                 </li>
+                <li class="nav-item ml-3">
+                    <a class="nav-link text-secondary" href="/sign-out"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="1em"><path fill="currentColor" d="M272 112v51.6h-96c-26.5 0-48 21.5-48 48v88.6c0 26.5 21.5 48 48 48h96v51.6c0 42.6 51.7 64.2 81.9 33.9l144-143.9c18.7-18.7 18.7-49.1 0-67.9l-144-144C323.8 48 272 69.3 272 112zm192 144L320 400v-99.7H176v-88.6h144V112l144 144zM96 64h84c6.6 0 12 5.4 12 12v24c0 6.6-5.4 12-12 12H96c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h84c6.6 0 12 5.4 12 12v24c0 6.6-5.4 12-12 12H96c-53 0-96-43-96-96V160c0-53 43-96 96-96z"></path></svg></a>
+                </li>
+                {% else %}
+                <li class="nav-item ml-3">
+                    <a class="nav-link text-secondary" href="#" data-toggle="modal" data-target="#sign-in"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="1em"><path fill="currentColor" d="M144 112v51.6H48c-26.5 0-48 21.5-48 48v88.6c0 26.5 21.5 48 48 48h96v51.6c0 42.6 51.7 64.2 81.9 33.9l144-143.9c18.7-18.7 18.7-49.1 0-67.9l-144-144C195.8 48 144 69.3 144 112zm192 144L192 400v-99.7H48v-88.6h144V112l144 144zm80 192h-84c-6.6 0-12-5.4-12-12v-24c0-6.6 5.4-12 12-12h84c26.5 0 48-21.5 48-48V160c0-26.5-21.5-48-48-48h-84c-6.6 0-12-5.4-12-12V76c0-6.6 5.4-12 12-12h84c53 0 96 43 96 96v192c0 53-43 96-96 96z"></path></svg></a>
+                    <div class="modal fade" id="sign-in" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content rounded-0">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Sign in</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    {% if token_is_not_set %}
+                                    <div class="alert alert-danger" role="alert">
+                                        Erreur: <strong>PICTURE_TOKEN</strong> n'est pas défini !
+                                        Assurez-vous de l'avoir défini en tant que variable d'environnement dans <code>docker-compose.yml</code>.
+                                    </div>
+                                    {% endif %}
+                                    <form action="/sign-in" method="POST">
+                                        <input type="password" name="token" class="form-control form-control-lg mb-2" placeholder="Mot de passe" required="required" autofocus="autofocus">
+                                        <button class="btn btn-lg btn-dark btn-block" type="submit">Connexion</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                {% endif %}
             </ul>
-            {% endif %}
         </div>
     </nav>
 
@@ -55,5 +86,10 @@
     <script type="text/javascript" src="/static/js/jquery-3.3.1.slim.min.js"></script>
     <script type="text/javascript" src="/static/js/popper-1.14.7.min.js"></script>
     <script type="text/javascript" src="/static/js/bootstrap-4.3.1.min.js"></script>
+    <script type="text/javascript">
+        $('#sign-in').on('shown.bs.modal', function (e) {
+            $(this).find('input[name="token"]').focus();
+        });
+    </script>
 </body>
 </html>

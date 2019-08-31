@@ -133,6 +133,7 @@ async def handle_index(request: 'aiohttp.web.Request') -> dict:
 
     return {
         'is_authenticated': session.get('token', None) == token,
+        'token_is_not_set': token is False,
         'files': db.select(),
     }
 
@@ -170,27 +171,27 @@ async def handle_page(request: 'aiohttp.web.Request') -> dict:
 
     return {
         'is_authenticated': session.get('token', None) == token,
+        'token_is_not_set': token is False,
         'data': data,
     }
 
 
-@routes.get('/login')
+@routes.get('/sign-out')
 @aiohttp_jinja2.template('login.jinja2')
-async def handle_login(request: 'aiohttp.web.Request') -> dict:
-    return {
-        'token_is_not_set': token is False,
-    }
+async def handle_signout(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+    session = await aiohttp_session.new_session(request)
+    session['token'] = None
+    return aiohttp.web.HTTPFound('/')
 
 
-@routes.post('/login')
-async def handle_login(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+@routes.post('/sign-in')
+async def handle_signin(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
     post = await request.post()
     if post.get('token', None) == token:
-        session = await aiohttp_session.get_session(request)
+        session = await aiohttp_session.new_session(request)
         session['token'] = post.get('token')
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Successfully authenticated from {request.remote}")
-        return aiohttp.web.HTTPFound('/admin')
-    return aiohttp.web.HTTPFound('/login')
+    return aiohttp.web.HTTPFound(f"/p/{post.get('uuid')}" if post.get('uuid', False) else '/')
 
 
 @routes.get('/upload')
