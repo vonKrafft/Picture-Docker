@@ -82,7 +82,7 @@ class Database:
         row = cursor.fetchone()
         return {key: row[key] for key in row.keys()} if row is not None else None
 
-    def insert(self, image_uuid: str, filename: str, path: str, captiobn: str = '', location: str = '') -> None:
+    def insert(self, image_uuid: str, filename: str, path: str, caption: str = '', location: str = '') -> None:
         cursor = self.conn.cursor()
         cursor.execute('INSERT INTO `images` (`uuid`, `filename`, `path`, `caption`, `location`) VALUES (:image_uuid, :filename, :path, :caption, :location)', {
             'image_uuid': str(image_uuid),
@@ -211,18 +211,8 @@ async def handle_signout(request: 'aiohttp.web.Request') -> 'aiohttp.web.Respons
     return aiohttp.web.HTTPFound('/')
 
 
-@routes.get('/upload')
-@aiohttp_jinja2.template('upload.jinja2')
-async def handle_upload(request: 'aiohttp.web.Request') -> dict:
-    session = await aiohttp_session.get_session(request)
-    if session.get('token', None) != token:
-        raise aiohttp.web.HTTPFound('/login')
-    
-    return {}
-
-
-@routes.post('/upload')
-async def handle_upload(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+@routes.post('/store')
+async def handle_store(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
     session = await aiohttp_session.get_session(request)
     if session.get('token', None) != token:
         raise aiohttp.web.HTTPFound('/login')
@@ -244,37 +234,9 @@ async def handle_upload(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response
     with open(os.path.join(upload_dir, path, filename), 'wb') as file:
         file.write(upload.file.read())
 
-    image = Image.open(os.path.join(upload_dir, path, filename))
-    root, extension = os.path.splitext(os.path.basename(image.filename))
-    thumbnails = list()
-    for width in [1200, 992, 768, 576]:
-        if image.width > width:
-            thumbnails.append(image_resize(image.copy(), os.path.join(upload_dir, path), root, extension, width))
-    if image.width > 150 and image.height > 150:
-        thumbnails.append(image_thumbnail(image.copy(), os.path.join(upload_dir, path), root, extension))
-    db.insert(image_uuid, upload.filename, os.path.join(path, filename), thumbnails)
+    db.insert(image_uuid, upload.filename, os.path.join(path, filename), post.get('caption'), post.get('location'))
 
-    return aiohttp.web.HTTPFound(f'/image/{image_uuid}')
-
-
-@routes.get('/admin/delete/{image_uuid}')
-async def handle_admin_delete(request: 'aiohttp.web.Request') -> dict:
-    session = await require_authenticated_user(request)
-    img = db.select_by_uuid(request.match_info.get('image_uuid', None))
-
-    if img is None:
-        return aiohttp.web.HTTPNotFound()
-
-    img['root'], img['extension'] = os.path.splitext(img.get('path'))
-    files = [f"{img.get('root')}-{thumbnail}.{img.get('extension').lstrip('.')}" for thumbnail in json.loads(img['thumbnails'])]
-    files.append(img.get('path'))
-
-    for filepath in files:
-        if os.path.isfile(os.path.join(upload_dir, filepath)):
-            shutil.move(os.path.join(upload_dir, filepath), os.path.join(trash_dir, os.path.basename(filepath)))
-    db.delete(request.match_info.get('image_uuid', None))
-
-    return aiohttp.web.HTTPFound(request.headers.get('Referer', '/admin/explorer').replace(f"{request.scheme}://{request.host}", ''))
+    return aiohttp.web.HTTPFound(f'/p/{image_uuid}')
 
 
 async def handle_400(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
