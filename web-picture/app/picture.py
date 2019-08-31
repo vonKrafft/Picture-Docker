@@ -176,12 +176,21 @@ async def handle_page(request: 'aiohttp.web.Request') -> dict:
     }
 
 
-@routes.get('/sign-out')
-@aiohttp_jinja2.template('login.jinja2')
-async def handle_signout(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
-    session = await aiohttp_session.new_session(request)
-    session['token'] = None
-    return aiohttp.web.HTTPFound('/')
+@routes.delete('/p/{image_uuid}')
+async def handle_deletion(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+    session = await aiohttp_session.get_session(request)
+    if session.get('token', None) != token:
+        raise aiohttp.web.HTTPUnauthorized()
+
+    data = db.select_by_uuid(request.match_info.get('image_uuid', None))
+    if data is None:
+        raise aiohttp.web.HTTPNotFound()
+
+    if os.path.isfile(os.path.join(upload_dir, data.get('path'))):
+        shutil.move(os.path.join(upload_dir, data.get('path')), os.path.join(trash_dir, os.path.basename(data.get('path'))))
+    db.delete(request.match_info.get('image_uuid', None))
+
+    return aiohttp.web.HTTPAccepted()
 
 
 @routes.post('/sign-in')
@@ -192,6 +201,14 @@ async def handle_signin(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response
         session['token'] = post.get('token')
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Successfully authenticated from {request.remote}")
     return aiohttp.web.HTTPFound(f"/p/{post.get('uuid')}" if post.get('uuid', False) else '/')
+
+
+@routes.get('/sign-out')
+@aiohttp_jinja2.template('login.jinja2')
+async def handle_signout(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+    session = await aiohttp_session.new_session(request)
+    session['token'] = None
+    return aiohttp.web.HTTPFound('/')
 
 
 @routes.get('/upload')
