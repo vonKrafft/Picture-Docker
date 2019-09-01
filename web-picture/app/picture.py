@@ -131,10 +131,14 @@ token = os.environ["PICTURE_TOKEN"] if "PICTURE_TOKEN" in os.environ else False
 async def handle_index(request: 'aiohttp.web.Request') -> dict:
     session = await aiohttp_session.get_session(request)
 
+    pictures = db.select()
+    hashtags = [m.group(1) for data in pictures for m in re.finditer(r'#(\w+)', data.get('caption'))]
+
     return {
         'is_authenticated': session.get('token', None) == token,
         'token_is_not_set': token is False,
-        'files': db.select(),
+        'pictures': pictures,
+        'hashtags': sorted(hashtags),
     }
 
 

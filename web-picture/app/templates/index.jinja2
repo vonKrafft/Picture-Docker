@@ -62,17 +62,35 @@
 
     <main class="container">
 
-        <div class="row my-5">
+        <header class="row my-5">
             <div class="col-12 col-xl-10 offset-xl-1">
-                <div class="card-columns">
-                    {% for img in files %}
-                    <a href="/p/{{ img.uuid }}" class="card border-0 rounded-0 bg-light link-over">
-                        <img src="/media/{{ img.path }}" class="card-img-top rounded-0">
-                    </a>
+                <div class="page-header d-flex flex-row">
+                    <img src="/static/img/profile.jpg" class="rounded-circle">
+                    <div class="">
+                        <h1 class="page-title">v0nkrafft<small class="border-left border-dark ml-3 pl-3"><b>{{ pictures|length }}</b> publications</small></h1>
+                        <ul class="list-inline mt-3">
+                            {% for tag in hashtags %}
+                            <li class="list-inline-item"><a class="btn btn-sm  btn-outline-secondary" href="?hashtag={{ tag }}">#{{ tag }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="row my-5">
+            <div class="col-12 col-xl-10 offset-xl-1">
+                <div class="row p-1">
+                    {% for img in pictures %}
+                    <div class="col-4 p-grid">
+                        <a href="/p/{{ img.uuid }}" class="card border-0 rounded-0 bg-light link-over">
+                            <img src="/media/{{ img.path }}" class="card-img-top rounded-0">
+                        </a>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
-        </div>
+        </section>
 
     </main>
 

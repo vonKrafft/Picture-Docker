@@ -17,6 +17,12 @@ a.link-over:hover::before, a.link-over:focus::before {
     background-color: rgba(0,0,0,0.25);
 }
 
+.p-grid { padding: .375rem !important; }
+@media(min-width: 576px) { .p-grid { padding: .5rem !important; } }
+@media(min-width: 768px) { .p-grid { padding: .625rem !important; } }
+@media(min-width: 992px) { .p-grid { padding: .75rem !important; } }
+@media(min-width: 1200px) { .p-grid { padding: .875rem !important; } }
+
 @media(min-width: 576px) { .navbar > .container { max-width: none; } }
 @media(min-width: 768px) { .navbar > .container { max-width: none; } }
 @media(min-width: 992px) { .navbar > .container { max-width: calc(960px + 3rem); } }
@@ -84,4 +90,18 @@ a.link-over:hover::before, a.link-over:focus::before {
 
 .custom-file, .custom-file-input, .custom-file-label {
     cursor: pointer;
+}
+
+.page-header img {
+    max-height: 150px;
+    padding-left: 5rem;
+    padding-right: 5rem;
+}
+
+.page-header .page-title {
+    font-size: 1.75rem;
+}
+
+.page-header .page-title > small {
+    font-size: 1rem;
 }
