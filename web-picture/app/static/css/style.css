@@ -98,11 +98,16 @@ a.link-over:hover::before, a.link-over:focus::before {
     }
 }
 
-.list-group-item svg {
+.list-group-item .media svg {
     height: 1.25rem;
     margin-top: .25rem; 
     margin-bottom: .25rem; 
     width: auto;
+    min-width: 1.25rem
+}
+
+.list-group-item .media .media-body {
+    max-width: calc(100% - 1.25rem);
 }
 
 .small {

@@ -28,7 +28,7 @@
                             <div class="modal-content rounded-0">
                                 <div class="modal-header">
                                     <h5 class="modal-title">Nouvelle image</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <button type="button" class="close" data-dismiss="modal" title="Close">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
                                 </div>
@@ -73,7 +73,7 @@
                             <div class="modal-content rounded-0">
                                 <div class="modal-header">
                                     <h5 class="modal-title">S'authentifier</h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <button type="button" class="close" data-dismiss="modal" title="Close">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
                                 </div>
@@ -111,9 +111,9 @@
                                 <div class="media">
                                     <svg class="mr-2 text-secondary" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zM7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 2.88-2.88 7.19-5 9.88C9.92 16.21 7 11.85 7 9z"></path><circle fill="currentColor" cx="12" cy="9" r="2.5"></circle></svg>
                                     <div class="media-body small">
-                                        <div class="text-nowrap font-weight-bold" aria-label="Lieu : {{ data.location }}">{{ data.location }}</div>
+                                        <div class="text-truncate font-weight-bold" title="Lieu : {{ data.location }}">{{ data.location }}</div>
                                         <div class="text-wrap">
-                                            <span class="text-wrap mr-2" aria-label="Description : {{ data.caption }}">{{ data.caption }}</span>
+                                            <span id="caption" class="text-wrap mr-2" title="Description : {{ data.caption }}">{{ data.caption }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -122,9 +122,9 @@
                                 <div class="media">
                                     <svg class="mr-2 text-secondary" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM9 9.5a2.5 2.5 0 0 0 0 5 2.5 2.5 0 0 0 0-5z"></path></svg>
                                     <div class="media-body small">
-                                        <div class="text-nowrap font-weight-bold" aria-label="Date : {{ data.date }}">{{ data.date }}</div>
+                                        <div class="text-nowrap font-weight-bold" title="Date : {{ data.date }}">{{ data.date }}</div>
                                         <div class="text-nowrap">
-                                            <span class="text-nowrap mr-2" aria-label="Heure : {{ data.time }}">{{ data.time }}</span>
+                                            <span class="text-nowrap mr-2" title="Heure : {{ data.time }}">{{ data.time }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -133,16 +133,16 @@
                                 <div class="media">
                                     <svg class="mr-2 text-secondary" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"></path></svg>
                                     <div class="media-body small">
-                                        <div class="text-nowrap font-weight-bold" aria-label="Nom du fichier : {{ data.filename }}">{{ data.filename }}</div>
+                                        <div class="text-nowrap font-weight-bold" title="Nom du fichier : {{ data.filename }}">{{ data.filename }}</div>
                                         <div class="text-nowrap">
                                             {% if data.resolution > 0.0 %}
-                                            <span class="text-nowrap mr-2" aria-label="Nombre de mégapixels : {{ data.resolution }} Mpx">{{ data.resolution }} Mpx</span>
+                                            <span class="text-nowrap mr-2" title="Nombre de mégapixels : {{ data.resolution }} Mpx">{{ data.resolution }} Mpx</span>
                                             {% endif %}
                                             {% if data.width > 0 and data.height > 0 %}
-                                            <span class="text-nowrap mr-2" aria-label="Taille : {{ data.width }} × {{ data.height }} pixels">{{ data.width }} × {{ data.height }}</span>
+                                            <span class="text-nowrap mr-2" title="Taille : {{ data.width }} × {{ data.height }} pixels">{{ data.width }} × {{ data.height }}</span>
                                             {% endif %}
                                             {% if data.stat.st_size > 0 %}
-                                            <span class="text-nowrap mr-2" aria-label="Taille du fichier : {{ data.weight }}o">{{ data.weight }}o</span>
+                                            <span class="text-nowrap mr-2" title="Taille du fichier : {{ data.weight }}o">{{ data.weight }}o</span>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -153,19 +153,19 @@
                                 <div class="media">
                                     <svg class="mr-2 text-secondary" viewBox="0 0 24 24"><path fill="currentColor" d="M14.25 2.26l-.08-.04-.01.02C13.46 2.09 12.74 2 12 2 6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10c0-4.75-3.31-8.72-7.75-9.74zM19.41 9h-7.99l2.71-4.7c2.4.66 4.35 2.42 5.28 4.7zM13.1 4.08L10.27 9l-1.15 2L6.4 6.3A7.958 7.958 0 0 1 12 4c.37 0 .74.03 1.1.08zM5.7 7.09L8.54 12l1.15 2H4.26C4.1 13.36 4 12.69 4 12c0-1.85.64-3.55 1.7-4.91zM4.59 15h7.98l-2.71 4.7A8.033 8.033 0 0 1 4.59 15zm6.31 4.91L14.89 13l2.72 4.7A8 8 0 0 1 12 20c-.38 0-.74-.04-1.1-.09zm7.4-3l-4-6.91h5.43c.17.64.27 1.31.27 2 0 1.85-.64 3.55-1.7 4.91z"></path></svg>
                                     <div class="media-body small">
-                                        <div class="text-nowrap font-weight-bold" aria-label="Nom de l'appareil photo : {{ data.Make }} {{ data.Model }}">{{ data.Make }} {{ data.Model }}</div>
+                                        <div class="text-nowrap font-weight-bold" title="Nom de l'appareil photo : {{ data.Make }} {{ data.Model }}">{{ data.Make }} {{ data.Model }}</div>
                                         <div class="text-nowrap">
                                             {% if data.Opening and data.Opening > 0.0 %}
-                                            <span class="text-nowrap mr-2" aria-label="Ouverture : ƒ/{{ data.Opening }}">ƒ/{{ data.Opening }}</span>
+                                            <span class="text-nowrap mr-2" title="Ouverture : ƒ/{{ data.Opening }}">ƒ/{{ data.Opening }}</span>
                                             {% endif %}
                                             {% if data.ExposureTime and data.ExposureTime|length >= 2 %}
-                                            <span class="text-nowrap mr-2" aria-label="Temps de pose : {{ data.ExposureTime[0] }}/{{ data.ExposureTime[1] }}">{{ data.ExposureTime[0] }}/{{ data.ExposureTime[1] }}</span>
+                                            <span class="text-nowrap mr-2" title="Temps de pose : {{ data.ExposureTime[0] }}/{{ data.ExposureTime[1] }}">{{ data.ExposureTime[0] }}/{{ data.ExposureTime[1] }}</span>
                                             {% endif %}
                                             {% if data.Focal and data.Focal > 0 %}
-                                            <span class="text-nowrap mr-2" aria-label="Longueur focale : {{ data.Focal }} mm">{{ data.Focal }} mm</span>
+                                            <span class="text-nowrap mr-2" title="Longueur focale : {{ data.Focal }} mm">{{ data.Focal }} mm</span>
                                             {% endif %}
                                             {% if data.ISOSpeedRatings %}
-                                            <span class="text-nowrap mr-2" aria-label="">{{ data.ISOSpeedRatings }} ISO</span>
+                                            <span class="text-nowrap mr-2" title="">{{ data.ISOSpeedRatings }} ISO</span>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -213,17 +213,24 @@
     <script type="text/javascript" src="/static/js/popper-1.14.7.min.js"></script>
     <script type="text/javascript" src="/static/js/bootstrap-4.3.1.min.js"></script>
     <script type="text/javascript">
-        $('#sign-in').on('shown.bs.modal', function (e) {
-            $(this).find('input[name="token"]').focus();
-        });
-        $('[data-toggle="delete"]').on('click', function (e) {
-            $.ajax({
-                type: 'DELETE',
-                url: document.location.href
-            }).done(function( data, textStatus, jqXHR ) {
-                document.location.href = '/';
-            }).fail(function( jqXHR, textStatus, errorThrown ) {
-                console.log(textStatus)
+        $(function () {
+            $('#sign-in').on('shown.bs.modal', function (e) {
+                $(this).find('input[name="token"]').focus();
+            });
+
+            $('[data-toggle="delete"]').on('click', function (e) {
+                $.ajax({
+                    type: 'DELETE',
+                    url: document.location.href
+                }).done(function( data, textStatus, jqXHR ) {
+                    document.location.href = '/';
+                }).fail(function( jqXHR, textStatus, errorThrown ) {
+                    console.log(textStatus)
+                });
+            });
+
+            $(document).ready(function () {
+                $('#caption').html($('#caption').text().replace(/\#([\w\u00E0-\u00FC]+)/g, '<a href="/?hashtag=$1">#$1</a>'))
             });
         });
     </script>

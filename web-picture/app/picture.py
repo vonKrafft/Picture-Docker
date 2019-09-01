@@ -74,7 +74,7 @@ class Database:
 
     def select(self) -> list:
         cursor = self.conn.cursor()
-        cursor.execute('''SELECT * FROM `images`''')
+        cursor.execute('''SELECT * FROM `images` ORDER BY `id` DESC''')
         return [{key: row[key] for key in row.keys()} for row in cursor.fetchall()]
 
     def select_by_uuid(self, image_uuid: str) -> dict:
@@ -82,6 +82,13 @@ class Database:
         cursor.execute('''SELECT * FROM `images` WHERE `uuid` = :image_uuid LIMIT 1''', { 'image_uuid': str(image_uuid) })
         row = cursor.fetchone()
         return {key: row[key] for key in row.keys()} if row is not None else None
+
+    def select_hashtag(self, hashtag: str) -> list:
+        cursor = self.conn.cursor()
+        cursor.execute('''SELECT * FROM `images` WHERE `caption` LIKE :hashtag ORDER BY `id` DESC''', {
+            'hashtag': f"%#{hashtag}%"
+        })
+        return [{key: row[key] for key in row.keys()} for row in cursor.fetchall()]
 
     def insert(self, image_uuid: str, filename: str, path: str, thumbnail: str, caption: str = '', location: str = '') -> None:
         cursor = self.conn.cursor()
@@ -134,8 +141,8 @@ token = os.environ["PICTURE_TOKEN"] if "PICTURE_TOKEN" in os.environ else False
 async def handle_index(request: 'aiohttp.web.Request') -> dict:
     session = await aiohttp_session.get_session(request)
 
-    pictures = db.select()
-    hashtags = [m.group(1) for data in pictures for m in re.finditer(r'#(\w+)', data.get('caption'))]
+    pictures = db.select() if request.query.get('hashtag', None) is None else db.select_hashtag(request.query.get('hashtag'))
+    hashtags = [m.group(1) for data in db.select() for m in re.finditer(r'#(\w+)', data.get('caption'))]
 
     return {
         'is_authenticated': session.get('token', None) == token,
