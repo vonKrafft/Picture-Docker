@@ -103,17 +103,14 @@ class Database:
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] New image {filename} ({image_uuid})")
         self.conn.commit()
 
-    def update(self, image_uuid: str, filename: str, path: str, thumbnail: str, caption: str = '', location: str = '') -> None:
+    def update(self, image_uuid: str, caption: str = '', location: str = '') -> None:
         cursor = self.conn.cursor()
-        cursor.execute('UPDATE `images` SET `filename` = :filename, `path` = :path, `thumbnail` = :thumbnail, `caption` = :caption, `location` = :location WHERE `uuid` = :image_uuid', {
+        cursor.execute('UPDATE `images` SET `caption` = :caption, `location` = :location WHERE `uuid` = :image_uuid', {
             'image_uuid': str(image_uuid),
-            'filename': str(filename),
-            'path': str(path),
-            'thumbnail': str(thumbnail),
             'caption': str(caption),
             'location': str(location)
         })
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Update image {filename} ({image_uuid})")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Update image {image_uuid}")
         self.conn.commit()
 
     def delete(self, image_uuid: str) -> None:
@@ -188,6 +185,22 @@ async def handle_page(request: 'aiohttp.web.Request') -> dict:
         'token_is_not_set': token is False,
         'data': data,
     }
+
+
+@routes.post('/p/{image_uuid}')
+async def handle_edition(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
+    session = await aiohttp_session.get_session(request)
+    if session.get('token', None) != token:
+        raise aiohttp.web.HTTPUnauthorized()
+
+    data = db.select_by_uuid(request.match_info.get('image_uuid', None))
+    if data is None:
+        raise aiohttp.web.HTTPNotFound()
+
+    post = await request.post()
+    db.update(data.get('uuid'), post.get('caption', ''), post.get('location', ''))
+
+    return aiohttp.web.HTTPFound(f"/p/{data.get('uuid')}")
 
 
 @routes.delete('/p/{image_uuid}')
@@ -265,13 +278,6 @@ async def handle_404(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
 
 async def handle_500(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response':
     return aiohttp_jinja2.render_template('errors/500.html', request, {})
-
-
-async def require_authenticated_user(request: 'aiohttp.web.Request') -> 'aiohttp_session.Session':
-    session = await aiohttp_session.get_session(request)
-    # if session.get('token', None) != token:
-    #     raise aiohttp.web.HTTPFound('/login')
-    return session
 
 
 def image_thumbnail(path: str, filename: str, square: int = 150) -> str:
