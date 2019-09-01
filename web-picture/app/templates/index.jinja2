@@ -22,7 +22,45 @@
             <ul class="navbar-nav flex-row mr-auto">
                 {% if is_authenticated %}
                 <li class="nav-item ml-3">
-                    <a class="nav-link text-secondary" href="#"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" height="1em"><path fill="currentColor" d="M528 288H384v-32h64c42.6 0 64.2-51.7 33.9-81.9l-160-160c-18.8-18.8-49.1-18.7-67.9 0l-160 160c-30.1 30.1-8.7 81.9 34 81.9h64v32H48c-26.5 0-48 21.5-48 48v128c0 26.5 21.5 48 48 48h480c26.5 0 48-21.5 48-48V336c0-26.5-21.5-48-48-48zm-400-80L288 48l160 160H336v160h-96V208H128zm400 256H48V336h144v32c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48v-32h144v128zm-40-64c0 13.3-10.7 24-24 24s-24-10.7-24-24 10.7-24 24-24 24 10.7 24 24z"></path></svg></a>
+                    <a class="nav-link text-secondary" href="#" data-toggle="modal" data-target="#new-item"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" height="1em"><path fill="currentColor" d="M528 288H384v-32h64c42.6 0 64.2-51.7 33.9-81.9l-160-160c-18.8-18.8-49.1-18.7-67.9 0l-160 160c-30.1 30.1-8.7 81.9 34 81.9h64v32H48c-26.5 0-48 21.5-48 48v128c0 26.5 21.5 48 48 48h480c26.5 0 48-21.5 48-48V336c0-26.5-21.5-48-48-48zm-400-80L288 48l160 160H336v160h-96V208H128zm400 256H48V336h144v32c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48v-32h144v128zm-40-64c0 13.3-10.7 24-24 24s-24-10.7-24-24 10.7-24 24-24 24 10.7 24 24z"></path></svg></a>
+                    <div class="modal fade" id="new-item" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content rounded-0">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Nouvelle image</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form action="/store" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+                                        <div class="input-group mb-2">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="1em"><path fill="currentColor" d="M464 64H48C21.49 64 0 85.49 0 112v288c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V112c0-26.51-21.49-48-48-48zm-6 336H54a6 6 0 0 1-6-6V118a6 6 0 0 1 6-6h404a6 6 0 0 1 6 6v276a6 6 0 0 1-6 6zM128 152c-22.091 0-40 17.909-40 40s17.909 40 40 40 40-17.909 40-40-17.909-40-40-40zM96 352h320v-80l-87.515-87.515c-4.686-4.686-12.284-4.686-16.971 0L192 304l-39.515-39.515c-4.686-4.686-12.284-4.686-16.971 0L96 304v48z"></path></svg></span>
+                                            </div>
+                                            <div class="custom-file">
+                                                <input type="file" class="custom-file-input" name="image">
+                                                <label class="custom-file-label" for="image" data-browse="Parcourir">Formats autorisés: JPG, PNG, GIF</label>
+                                            </div>
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" height="1em"><path fill="currentColor" d="M512 160h-96V64c0-35.3-28.7-64-64-64H64C28.7 0 0 28.7 0 64v160c0 35.3 28.7 64 64 64h32v52c0 7.1 5.8 12 12 12 2.4 0 4.9-.7 7.1-2.4l76.9-43.5V384c0 35.3 28.7 64 64 64h96l108.9 61.6c2.2 1.6 4.7 2.4 7.1 2.4 6.2 0 12-4.9 12-12v-52h32c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64zM96 240H64c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16h288c8.8 0 16 7.2 16 16v160c0 8.8-7.2 16-16 16H211.4l-11 6.2-56.4 31.9V240H96zm432 144c0 8.8-7.2 16-16 16h-80v38.1l-56.4-31.9-11-6.2H256c-8.8 0-16-7.2-16-16v-96h112c35.3 0 64-28.7 64-64v-16h96c8.8 0 16 7.2 16 16v160z"></path></svg></span>
+                                            </div>
+                                            <input type="text" name="caption" class="form-control" placeholder="Description">
+                                        </div>
+                                        <div class="input-group mb-2">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" height="1em"><path fill="currentColor" d="M192 0C85.903 0 0 86.014 0 192c0 71.117 23.991 93.341 151.271 297.424 18.785 30.119 62.694 30.083 81.457 0C360.075 285.234 384 263.103 384 192 384 85.903 297.986 0 192 0zm0 464C64.576 259.686 48 246.788 48 192c0-79.529 64.471-144 144-144s144 64.471 144 144c0 54.553-15.166 65.425-144 272zm-80-272c0-44.183 35.817-80 80-80s80 35.817 80 80-35.817 80-80 80-80-35.817-80-80z"></path></svg></span>
+                                            </div>
+                                            <input type="text" name="location" class="form-control" placeholder="Lieu">
+                                        </div>
+                                        <button class="btn btn-lg btn-dark btn-block" type="submit">Envoyer</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </li>
                 <li class="nav-item ml-3">
                     <a class="nav-link text-secondary" href="/sign-out"><svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" height="1em"><path fill="currentColor" d="M272 112v51.6h-96c-26.5 0-48 21.5-48 48v88.6c0 26.5 21.5 48 48 48h96v51.6c0 42.6 51.7 64.2 81.9 33.9l144-143.9c18.7-18.7 18.7-49.1 0-67.9l-144-144C323.8 48 272 69.3 272 112zm192 144L320 400v-99.7H176v-88.6h144V112l144 144zM96 64h84c6.6 0 12 5.4 12 12v24c0 6.6-5.4 12-12 12H96c-26.5 0-48 21.5-48 48v192c0 26.5 21.5 48 48 48h84c6.6 0 12 5.4 12 12v24c0 6.6-5.4 12-12 12H96c-53 0-96-43-96-96V160c0-53 43-96 96-96z"></path></svg></a>
@@ -64,25 +102,23 @@
 
         <header class="row my-5">
             <div class="col-12 col-xl-10 offset-xl-1">
-                <div class="page-header d-flex flex-row">
-                    <img src="/static/img/profile.jpg" class="rounded-circle">
-                    <div class="">
-                        <h1 class="page-title">v0nkrafft<small class="border-left border-dark ml-3 pl-3"><b>{{ pictures|length }}</b> publications</small></h1>
-                        <ul class="list-inline mt-3">
-                            {% for tag in hashtags %}
-                            <li class="list-inline-item"><a class="btn btn-sm  btn-outline-secondary" href="?hashtag={{ tag }}">#{{ tag }}</a></li>
-                            {% endfor %}
-                        </ul>
-                    </div>
+                <div class="page-header">
+                    <div class="page-profile"><img src="/static/img/profile.jpg"></div>
+                    <h1 class="page-title">v0nkrafft<small class="border-left border-dark ml-3 pl-3"><b>{{ pictures|length }}</b> publications</small></h1>
+                    <ul class="list-inline mt-3 mb-0">
+                        {% for tag in hashtags %}
+                        <li class="list-inline-item mt-1 mb-2"><a class="btn btn-sm btn-outline-secondary" href="?hashtag={{ tag }}">#{{ tag }}</a></li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </header>
 
         <section class="row my-5">
             <div class="col-12 col-xl-10 offset-xl-1">
-                <div class="row p-1">
+                <div class="row grid">
                     {% for img in pictures %}
-                    <div class="col-4 p-grid">
+                    <div class="col-4 grid-item">
                         <a href="/p/{{ img.uuid }}" class="card border-0 rounded-0 bg-light link-over">
                             <img src="/media/{{ img.thumbnail }}" class="card-img-top rounded-0">
                         </a>
