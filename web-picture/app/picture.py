@@ -62,9 +62,10 @@ class Database:
         cursor.executescript('''
             CREATE TABLE IF NOT EXISTS `images` (
                 `id` INTEGER PRIMARY KEY,
-                `uuid` TEXT NOT NULL,
-                `filename` TEXT NOT NULL,
-                `path` TEXT NOT NULL,
+                `uuid` TEXT NOT NULL DEFAULT "",
+                `filename` TEXT NOT NULL DEFAULT "",
+                `path` TEXT NOT NULL DEFAULT "",
+                `thumbnail` TEXT NOT NULL DEFAULT "",
                 `caption` TEXT DEFAULT NULL,
                 `location` TEXT DEFAULT NULL
             );
@@ -82,24 +83,26 @@ class Database:
         row = cursor.fetchone()
         return {key: row[key] for key in row.keys()} if row is not None else None
 
-    def insert(self, image_uuid: str, filename: str, path: str, caption: str = '', location: str = '') -> None:
+    def insert(self, image_uuid: str, filename: str, path: str, thumbnail: str, caption: str = '', location: str = '') -> None:
         cursor = self.conn.cursor()
-        cursor.execute('INSERT INTO `images` (`uuid`, `filename`, `path`, `caption`, `location`) VALUES (:image_uuid, :filename, :path, :caption, :location)', {
+        cursor.execute('INSERT INTO `images` (`uuid`, `filename`, `path`, `thumbnail`, `caption`, `location`) VALUES (:image_uuid, :filename, :path, :thumbnail, :caption, :location)', {
             'image_uuid': str(image_uuid),
             'filename': str(filename),
             'path': str(path),
+            'thumbnail': str(thumbnail),
             'caption': str(caption),
             'location': str(location)
         })
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] New image {filename} ({image_uuid})")
         self.conn.commit()
 
-    def update(self, image_uuid: str, filename: str, path: str, thumbnails: list = []) -> None:
+    def update(self, image_uuid: str, filename: str, path: str, thumbnail: str, caption: str = '', location: str = '') -> None:
         cursor = self.conn.cursor()
-        cursor.execute('UPDATE `images` SET `filename` = :filename, `path` = :path, `caption` = :caption, `location` = :location WHERE `uuid` = :image_uuid', {
+        cursor.execute('UPDATE `images` SET `filename` = :filename, `path` = :path, `thumbnail` = :thumbnail, `caption` = :caption, `location` = :location WHERE `uuid` = :image_uuid', {
             'image_uuid': str(image_uuid),
             'filename': str(filename),
             'path': str(path),
+            'thumbnail': str(thumbnail),
             'caption': str(caption),
             'location': str(location)
         })
@@ -238,7 +241,9 @@ async def handle_store(request: 'aiohttp.web.Request') -> 'aiohttp.web.Response'
     with open(os.path.join(upload_dir, path, filename), 'wb') as file:
         file.write(upload.file.read())
 
-    db.insert(image_uuid, upload.filename, os.path.join(path, filename), post.get('caption'), post.get('location'))
+    thumbnail = image_thumbnail(path, filename, 384)
+
+    db.insert(image_uuid, upload.filename, os.path.join(path, filename), thumbnail, post.get('caption', ''), post.get('location', ''))
 
     return aiohttp.web.HTTPFound(f'/p/{image_uuid}')
 
@@ -262,24 +267,19 @@ async def require_authenticated_user(request: 'aiohttp.web.Request') -> 'aiohttp
     return session
 
 
-def image_resize(image: 'Image.Image', path: str, root: str, extension: str, new_width: int) -> str:
-    new_height = int(new_width * image.height / image.width)
-    image = image.resize((new_width, new_height), Image.ANTIALIAS)
-    image.save(os.path.join(path, f"{root}-{new_width}x{new_height}.{extension.lstrip('.')}"), image.format)
-    return f"{new_width}x{new_height}"
-
-
-def image_thumbnail(image: 'Image.Image', path: str, root: str, extension: str, square: int = 150) -> str:
+def image_thumbnail(path: str, filename: str, square: int = 150) -> str:
+    image = Image.open(os.path.join(upload_dir, path, filename))
+    root, extension = os.path.splitext(os.path.basename(image.filename))
     width, height = image.size
-    if width < height:
-        cropped = height - width
-        image = image.crop((0, int(math.floor(cropped / 2)), width, int(height - math.ceil(cropped / 2))))
-    elif width > height:
-        cropped = width - height
-        image = image.crop((int(math.floor(cropped / 2)), 0, int(width - math.ceil(cropped / 2)), height))
-    image.thumbnail((square, square), Image.ANTIALIAS)
-    image.save(os.path.join(path, f"{root}-{square}x{square}.{extension.lstrip('.')}"), image.format)
-    return f"{square}x{square}"
+    if image.width > square and image.height > square:
+        if width < height:
+            image = image.crop((0, int(math.floor((height - width) / 2)), width, int(height - math.ceil((height - width) / 2))))
+        elif width > height:
+            image = image.crop((int(math.floor((width - height) / 2)), 0, int(width - math.ceil((width - height) / 2)), height))
+        image.thumbnail((square, square), Image.ANTIALIAS)
+        image.save(os.path.join(upload_dir, path, f"{root}-{square}x{square}.{extension.lstrip('.')}"), image.format)
+        return os.path.join(path, f"{root}-{square}x{square}.{extension.lstrip('.')}")
+    return os.path.join(path, filename)
 
 
 def create_error_middleware(overrides):
