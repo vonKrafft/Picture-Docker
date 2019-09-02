@@ -220,6 +220,8 @@ async def handle_deletion(request: 'aiohttp.web.Request') -> 'aiohttp.web.Respon
 
     if os.path.isfile(os.path.join(upload_dir, data.get('path'))):
         shutil.move(os.path.join(upload_dir, data.get('path')), os.path.join(trash_dir, os.path.basename(data.get('path'))))
+    if os.path.isfile(os.path.join(upload_dir, data.get('thumbnail'))):
+        shutil.move(os.path.join(upload_dir, data.get('thumbnail')), os.path.join(trash_dir, os.path.basename(data.get('thumbnail'))))
     db.delete(request.match_info.get('image_uuid', None))
 
     return aiohttp.web.HTTPAccepted()
