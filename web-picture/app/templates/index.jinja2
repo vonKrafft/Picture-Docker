@@ -106,9 +106,25 @@
                     <div class="page-profile"><img src="/static/img/profile.jpg"></div>
                     <h1 class="page-title">v0nkrafft<small class="border-left border-dark ml-3 pl-3"><b>{{ pictures|length }}</b> publications</small></h1>
                     <ul class="list-inline mt-3 mb-0">
-                        {% for tag in hashtags %}
-                        <li class="list-inline-item mt-1 mb-2"><a class="btn btn-sm btn-outline-secondary" href="?hashtag={{ tag }}">#{{ tag }}</a></li>
+                        {% for tag in hashtags[:12] %}
+                        <li class="list-inline-item">
+                            {% if tag == current_tag %}
+                            <a class="btn btn-sm btn-secondary" href=".">#{{ tag }}</a>
+                            {% else %}
+                            <a class="btn btn-sm btn-outline-secondary" href="?hashtag={{ tag }}">#{{ tag }}</a>
+                            {% endif %}
+                        </li>
                         {% endfor %}
+                        {% if hashtags|length > 12 %}
+                        <li class="list-inline-item dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                            <div class="dropdown-menu">
+                                {% for tag in hashtags[12:] %}
+                                <a class="dropdown-item" href="?hashtag={{ tag }}">#{{ tag }}</a>
+                                {% endfor %}
+                            </div>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>

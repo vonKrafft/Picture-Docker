@@ -139,13 +139,18 @@ async def handle_index(request: 'aiohttp.web.Request') -> dict:
     session = await aiohttp_session.get_session(request)
 
     pictures = db.select() if request.query.get('hashtag', None) is None else db.select_hashtag(request.query.get('hashtag'))
-    hashtags = [m.group(1) for data in db.select() for m in re.finditer(r'#(\w+)', data.get('caption'))]
+    
+    hashtags = dict()
+    for tag in [m.group(1) for data in db.select() for m in re.finditer(r'#(\w+)', str(data.get('caption')))]:
+        hashtags[tag] = hashtags.get(tag, 0) + 1
+    hashtags = sorted(hashtags, key=hashtags.__getitem__, reverse=True)
 
     return {
         'is_authenticated': session.get('token', None) == token,
         'token_is_not_set': token is False,
         'pictures': pictures,
-        'hashtags': sorted(hashtags),
+        'hashtags': hashtags,
+        'current_tag': request.query.get('hashtag'),
     }
 
 

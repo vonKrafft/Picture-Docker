@@ -153,6 +153,14 @@ a.link-over:hover::before, a.link-over:focus::before {
     font-size: 1rem;
 }
 
+.page-header .list-inline-item {
+    margin-bottom: calc(.125rem + 4px);
+}
+
+.page-header .list-inline-item:not(:last-child) {
+    margin-right: .125rem;
+}
+
 @media(max-width: 736px) {
     .page-header {
         display: flex;
