@@ -26,8 +26,8 @@ The user within the Docker container has the UID and the GID 1000. Make sure the
 
 ```
 $ cd Picture-Docker
-$ chown -R 1000:1000 web-picture/{data,media,trash}
-$ chmod 775 web-picture/{data,media,trash}
+$ chown -R 1000:1000 picture/{data,media,trash}
+$ chmod 775 picture/{data,media,trash}
 ```
 
 ## Dependencies
